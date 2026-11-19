@@ -1,0 +1,39 @@
+name: Quick Wallet CLI Verify
+
+on:
+  push:
+    branches:
+      - verify-wallet-cli
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler libclang-dev
+      - name: Setup Rust (nightly fmt)
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: nightly-2025-12-05
+          components: rustfmt
+      - name: Setup Rust (1.100.0 test + clippy)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.100.0"
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Check formatting
+        run: |
+          cargo +nightly-2025-12-05 fmt --check -- applications/tari_wallet_cli/src/command/webrtc.rs applications/tari_wallet_cli/src/command/auth.rs
+      - name: Run unit tests
+        run: |
+          cargo +1.100.0 test -p tari_ootle_wallet_cli
+      - name: Run clippy
+        run: |
+          cargo +1.100.0 clippy -p tari_ootle_wallet_cli --no-deps --all-targets -- -D warnings
